@@ -1,9 +1,9 @@
 void enterDeepSleep() {
   // Настройка прерываний для пробуждения
-  pinMode(FIREMODESW, INPUT);
-  attachInterrupt(digitalPinToInterrupt(FIREMODESW), wakeUp, CHANGE);
-
-  ESP.deepSleep(0, WAKE_RF_DISABLED); // Сон на неопределенное время
+  //pinMode(FIREMODESW, INPUT);
+  //attachInterrupt(digitalPinToInterrupt(FIREMODESW), wakeUp, CHANGE);
+  ESP.deepSleep(0);
+  //ESP.deepSleep(0, WAKE_RF_DISABLED); // Сон на неопределенное время
 }
 
 void wakeUp() {

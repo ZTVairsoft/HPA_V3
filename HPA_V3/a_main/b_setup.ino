@@ -1,6 +1,8 @@
 void setup() {
   Serial.begin(115200);
 
+  //attachInterrupt(digitalPinToInterrupt(FIREMODESW), wakeUp, CHANGE);
+
   EEPROM.begin(1024);
 
   mem1.begin(0, 'a');

@@ -13,7 +13,7 @@ void build() {
 
   GP.UPDATE("rof,cof,vol,pr,vo,vc,vd,vi,volcor,btn,cow,sf,sa,na,OV,R1,R2,TrSl,DSSl,DSTr,led1,led2,led3");
 
-  GP.TITLE("ZTV ВВД v.2.0");
+  GP.TITLE("ZTV ВВД v.3.0");
   GP.HR();
 
   if (ui.uri("/")) {
@@ -123,7 +123,7 @@ void build() {
 
 
   }else if(ui.uri("/info")){
-    GP.LABEL("Прошивка v2.1.0");
+    GP.LABEL("Прошивка v3.0");
     GP.BREAK();
     GP.BREAK();
     GP.LABEL("Магазин");
@@ -138,12 +138,12 @@ void build() {
     GP.BREAK();
     GP.LABEL("Последние прошивки");
     GP.BREAK();
-    GP.UI_LINK("https://github.com/ZTVairsoft/HPA_control", "GitHub");
+    GP.UI_LINK("https://github.com/ZTVairsoft/HPA_V3", "GitHub");
     GP.BREAK();
     GP.BREAK();
     GP.LABEL("Последние релизы");
     GP.BREAK();
-    GP.UI_LINK("https://github.com/ZTVairsoft/HPA_control/releases", "Релизы BIN");
+    GP.UI_LINK("https://github.com/ZTVairsoft/HPA_V3/releases", "Релизы BIN");
 
   }else if (ui.uri("/ota_update")) {
   }

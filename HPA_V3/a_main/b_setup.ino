@@ -1,8 +1,6 @@
 void setup() {
   Serial.begin(115200);
 
-  //attachInterrupt(digitalPinToInterrupt(FIREMODESW), wakeUp, CHANGE);
-
   EEPROM.begin(1024);
 
   mem1.begin(0, 'a');
@@ -56,15 +54,33 @@ void setup() {
 
   //назначаем пины
   pinMode(SOLPIN, OUTPUT);
+  pinMode(SOLPIN2, OUTPUT);
   pinMode(TRIGPIN, INPUT);
   pinMode(FIREMODESW, INPUT);
   pinMode(TRACER, OUTPUT);
+
+  digitalWrite(SOLPIN, LOW);
+  digitalWrite(SOLPIN2, LOW);
+
+  if (Settings.reverseSolenoid2 == true && Settings.HPAsystemType == DSOL) {
+    digitalWrite(SOLPIN2, HIGH); // Нормально выдвинут - подаем HIGH для задвижения
+    solenoid2Active = false;
+  } else {
+    digitalWrite(SOLPIN2, LOW); // Нормально задвинут
+    solenoid2Active = false;
+  }
   
+  if (Settings.HPAsystemType == NONSINGLESYSTEM){
+    cycleTime = Settings.shotTime + Settings.shotWait;
+  }
+
   if (Settings.isSWProgSafe){
     pinMode(PROGSAFE, INPUT);
   }
 
   if (Settings.isTracer == 1) {
     digitalWrite(TRACER, HIGH);
+  }else{
+    digitalWrite(TRACER, LOW);
   }
 }

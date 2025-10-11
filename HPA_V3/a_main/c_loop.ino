@@ -10,27 +10,52 @@ void loop() {
     mem2.update();
     isLS = 0;
   }
-
-  if (Settings.isTracer == 1 && isLSTr == 0 && Settings.tracTime * 1000 <= millis()) {  //Выключение трассерки после включения через заданное время (для демонстрации работоспособности)
-    digitalWrite(TRACER, LOW);
+  switch (Settings.Load2Select) {
+    case NOPE:
+      break;
+    case JUSTON:
+      break;
+    case DELAFTERSHOTSEC:
+      break;
+    case DELAFTERSHOTMIN:
+      break;
   }
 
-  if (Settings.isTracer == 1 && isLSTr == 1 && tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
-    digitalWrite(TRACER, LOW);
-    isLSTr = 0;
+  switch (Settings.Load2Select) {
+    case DELAFTERSHOTSEC:
+      if (Settings.isLoad2 == 1 && isLD2 == 1 && load2Lastshot + (Settings.Load2Time * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+        digitalWrite(SOLPIN2, LOW);
+        isLD2 = 0;
+      }
+      break;
+    case DELAFTERSHOTMIN:
+      if (Settings.isLoad2 == 1 && isLD2 == 1 && load2Lastshot + (Settings.Load2Time * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+        digitalWrite(SOLPIN2, LOW);
+        isLD2 = 0;
+      }
+      break;
   }
 
-  if (millis() - voltTime > 5000) {  //проверка напряжения
+  switch (Settings.Load3Select) {
+    case DELAFTERSHOTSEC:
+      if (Settings.isTracer == 1 && isLSTr == 1 && tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+        digitalWrite(TRACER, LOW);
+        isLSTr = 0;
+      }
+      break;
+    case DELAFTERSHOTMIN:
+      if (Settings.isTracer == 1 && isLSTr == 1 && tracLastShot + (Settings.tracTime * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+        digitalWrite(TRACER, LOW);
+        isLSTr = 0;
+      }
+      break;
+  }
+
+  if (millis() - voltTime > 2000) {  //проверка напряжения
     Volt();
   }
 
-  triggerState = !digitalRead(TRIGPIN) ^ Settings.convTrig;
-  autoModeState = !digitalRead(FIREMODESW) ^ Settings.convSel;
-  if (Settings.isSWProgSafe) {
-    safetyState = !digitalRead(PROGSAFE) ^ Settings.isConvSafe;
-  } else {
-    safetyState = false;
-  }
+  CheckButtons();
 
   deepSleepTime = Settings.deepSleepMin * 1000 * 60;  //время до ухода в сон
 
@@ -49,22 +74,98 @@ void loop() {
   }
 
   if (triggerState == true) {  //проверка нажатия на спуск
-    switch (Settings.Mode) {
-      case AUTOMODE:  //режим автомата
-        if (autoMode == SEMI && Settings.numOfShotsSemi > 0) ShortShot(); 
-        else if (Settings.numOfShotsSemi > 0) SingleShot();
-        else AutoShot();
+
+    switch (Settings.PCB) {
+      //
+      case CUSTOMGUN:
+        switch (Settings.HPAsystemType) {
+          case SSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DOUBLEBURREL:
+            break;
+          case NONSINGLESYSTEM:
+          runSolenoidSinus();
+            break;
+        }
         break;
-      case SNIPERMODE:  //режим снайпера
-        SingleShot();
+      case M4:
+        switch (Settings.HPAsystemType) {
+          case SSOL:
+            Serial.println("TEST");
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DOUBLEBURREL:
+            break;
+          case NONSINGLESYSTEM:
+          runSolenoidSinus();
+            break;
+        }
         break;
-      case CQBMODE:  //режим CQB
-        if (Settings.isDoubleShot) DoubleShot();
-        else SingleShot();
+      case AK:
+        switch (Settings.HPAsystemType) {
+          case SSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DOUBLEBURREL:
+            break;
+          case NONSINGLESYSTEM:
+          runSolenoidSinus();
+            break;
+        }
         break;
-      case MACHINEGUNMODE:  //режим пулемета
-        AutoShot();
+      case M4A:
+        switch (Settings.HPAsystemType) {
+          case SSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DSOL:
+            SwModeSingleDoubleSolenoid();
+            break;
+          case DOUBLEBURREL:
+            break;
+          case NONSINGLESYSTEM:
+          runSolenoidSinus();
+            break;
+        }
         break;
+      case KAC:
+        switch (Settings.HPAsystemType) {
+          case SSOL:
+            AutoShot();
+            break;
+          case DSOL:
+            AutoShot();
+            break;
+          case DOUBLEBURREL:
+            break;
+          case NONSINGLESYSTEM:
+          runSolenoidSinus();
+            break;
+        }
+        break;
+      default:
+        Serial.println("SELECT HPA");
+        break;
+    }
+  }
+  if (Serial.available()) {
+    char c = Serial.read();
+    
+    // Команда 'r' - ручной сброс системы
+    if (c == 'r' || c == 'R') {
+      mem1.reset();  // Сброс настроек
+      Serial.println("Сброс");
+      ESP.restart();
     }
   }
 }

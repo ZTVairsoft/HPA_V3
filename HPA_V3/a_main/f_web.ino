@@ -13,9 +13,9 @@ void build() {
   GP.UI_BODY();
 
   GP.UPDATE("rof,cof,vol,pr,vo,vc,vd,vi,volcor,btn,cow,sf,sa,na,OV,R1,R2,TrSl,DSSl,DSTr,led1,led2,led3,pcb,hpa,OpBo,InNoz");
-  GP.RELOAD_CLICK("SOPS,Ld2Sw,TrSw,DSTr");
+  GP.RELOAD_CLICK("SOPS,Ld2Sw,TrSw,DSTr,OpBo,InNoz");
 
-  GP.TITLE("ZTV ВВД v.3.0");
+  GP.TITLE("ZTV ВВД v.3.1");
   GP.HR();
 
   if (ui.uri("/")) {
@@ -28,18 +28,36 @@ void build() {
       M_BOX(GP.SWITCH("WFTr", isWiFiFlag); GP.LABEL("включить спуск"););
       if (Settings.HPAsystemType == DSOL) {
         GP.LABEL("Задержка нозла в начале");
-        M_BOX(GP.LABEL("мс"); GP.SLIDER("nozBeg", Settings.del2SolBegin, 0, 5););
+        M_BOX(GP.LABEL("мс"); GP.SLIDER("nozBeg", Settings.del2SolBegin, 0, 40););
         GP.BREAK();
       }
 
-      GP.LABEL("Время открытия клапана");
-      M_BOX(GP.LABEL("мс"); GP.BUTTON_MINI("bkwO", "◄"); GP.SLIDER("vo", Settings.shotTime, 10, 100); GP.BUTTON_MINI("frwO", "►");); GP.BREAK();
-      GP.LABEL("Время закрытия клапана");
-      M_BOX(GP.LABEL("мс"); GP.BUTTON_MINI("bkwC", "◄"); GP.SLIDER("vc", Settings.shotWait, 10, 100); GP.BUTTON_MINI("frwC", "►");); GP.BREAK();
+      switch (Settings.HPAsystemType) {
+        case DSOL:
+          GP.LABEL("Время подачи воздуха");
+          break;
+        default:
+          GP.LABEL("Время открытия клапана");
+          break;
+      }
+
+      M_BOX(GP.LABEL("мс"); GP.BUTTON_MINI("bkwO", "◄"); GP.SLIDER("vo", Settings.shotTime, 5, 100); GP.BUTTON_MINI("frwO", "►"););
+      GP.BREAK();
+      switch (Settings.HPAsystemType) {
+        case DSOL:
+          GP.LABEL("Время отката нозла");
+          break;
+        default:
+          GP.LABEL("Время закрытия клапана");
+          break;
+      }
+
+      M_BOX(GP.LABEL("мс"); GP.BUTTON_MINI("bkwC", "◄"); GP.SLIDER("vc", Settings.shotWait, 5, 100); GP.BUTTON_MINI("frwC", "►"););
+      GP.BREAK();
 
       if (Settings.HPAsystemType == DSOL) {
         GP.LABEL("Задержка нозла в конце");
-        M_BOX(GP.LABEL("мс"); GP.SLIDER("nozEnd", Settings.del2SolBegin, 0, 5););
+        M_BOX(GP.LABEL("мс"); GP.SLIDER("nozEnd", Settings.del2SolEnd, 0, 25););
         GP.BREAK();
       }
 
@@ -74,7 +92,7 @@ void build() {
       switch (Settings.Mode) {
         case AUTOMODE:
           GP.LABEL("Кол-во выстрелов на одиночке");
-          M_BOX(GP.LABEL(""); GP.BUTTON_MINI("bkwS", "◄"); GP.SLIDER("sf", Settings.numOfShotsSemi, 0, 10); GP.BUTTON_MINI("frwS", "►"););
+          M_BOX(GP.LABEL(""); GP.BUTTON_MINI("bkwS", "◄"); GP.SLIDER("sf", Settings.numOfShotsSemi, 1, 10); GP.BUTTON_MINI("frwS", "►"););
           GP.BREAK();
           GP.LABEL("Кол-во выстрелов при авто");
           M_BOX(GP.LABEL(""); GP.BUTTON_MINI("bkwA", "◄"); GP.SLIDER("sa", Settings.numOfShotsAuto, 0, 100); GP.BUTTON_MINI("frwA", "►"););
@@ -163,6 +181,11 @@ void build() {
     if (Settings.HPAsystemType == DSOL) {
       M_BOX(GP.SWITCH("OpBo", Settings.openBolt); GP.LABEL("Норм.откр.нозл"););
       M_BOX(GP.SWITCH("InNoz", Settings.reverseSolenoid2); GP.LABEL("инверт. нозл"););
+      if(Settings.openBolt == true && Settings.reverseSolenoid2 == false || Settings.openBolt == false && Settings.reverseSolenoid2 == true){
+        Settings.otkat = false;
+      }else{
+      M_BOX(GP.SWITCH("Otk", Settings.otkat); GP.LABEL("откат в начале"););
+      }
     }
     switch (Settings.HPAsystemType) {
       case SSOL:
@@ -192,6 +215,7 @@ void build() {
       M_BOX(GP.LABEL("R1"); GP.NUMBER_F("R1", "", Settings.divR1););
       M_BOX(GP.LABEL("R2"); GP.NUMBER_F("R2", "", Settings.divR2););
       M_BOX(GP.LABEL("Опорное"); GP.NUMBER_F("OV", "", Settings.voltCorr););
+      GP.BUTTON("btn", "Сохранить настройки");
 
       GP.LABEL("Напряжение: ");
       GP.LABEL("", "vol");
@@ -207,14 +231,14 @@ void build() {
     GP.BREAK();
     GP.TEXT("pass", "pass", WF.WF_PASS);
     GP.BREAK();
-    GP.BUTTON("WFbtn", "Сохранить");
+    GP.BUTTON("WFbtn", "Сохранить Wi-Fi");
     GP.BREAK();
     GP.BUTTON_MINI("WFRbtn", "Сброс Wi-fi");
 
 
 
   } else if (ui.uri("/info")) {
-    GP.LABEL("Прошивка v3.0");
+    GP.LABEL("Прошивка v3.1");
     GP.BREAK();
     GP.BREAK();
     GP.LABEL("Магазин");
@@ -297,6 +321,12 @@ void action() {
     if (ui.clickInt("vo", Settings.shotTime)) {
     }
 
+    if (ui.clickInt("nozBeg", Settings.del2SolBegin)) {
+    }
+
+    if (ui.clickInt("nozEnd", Settings.del2SolEnd)) {
+    }
+
     if (ui.clickInt("vc", Settings.shotWait)) {
     }
 
@@ -344,6 +374,8 @@ void action() {
     if (ui.clickBool("OpBo", Settings.openBolt)) {
     }
     if (ui.clickBool("InNoz", Settings.reverseSolenoid2)) {
+    }
+    if (ui.clickBool("Otk", Settings.otkat)) {
     }
     if (ui.clickInt("load2", Settings.Load2Select)) {
       if (Settings.Load2Select == JUSTON) {
@@ -422,6 +454,7 @@ void action() {
       Serial.println(WF.WF_PASS);
       Serial.println(WF.apply);
       WF.apply = 1;
+
       mem3.updateNow();  // обновить сейчас
       Serial.println("Изменения сохранены");
 

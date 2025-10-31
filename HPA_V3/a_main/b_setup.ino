@@ -9,7 +9,9 @@ void setup() {
 
   delay(500); //задержка для выхода из сна, можно успеть переключить переключатель огня что бы не включился Wi-Fi
 
-  if (digitalRead(TRIGPIN) == LOW && WF.apply == 0) {  //если переключатель режимов нажат то запускается wifi
+  gpio_init();
+
+  if (digitalRead(TRIGPIN) == Settings.convTrig && WF.apply == 0) {  //если переключатель режимов нажат то запускается wifi
     WiFi.mode(WIFI_STA);
     WiFi.begin(AP_SSID, AP_PASS);
     while (WiFi.status() != WL_CONNECTED) {
@@ -17,11 +19,10 @@ void setup() {
       Serial.print(".");
     }
     Serial.println(WiFi.localIP());
-    //Serial.println("192.168.4.1");
     Serial.println(WF.WF_SSID);
     Serial.println(WF.WF_PASS);
     Serial.println(WF.apply);
-  } else if (digitalRead(TRIGPIN) == LOW) {
+  } else if (digitalRead(TRIGPIN) == Settings.convTrig) {
     isWiFiFlag = false;
     WiFi.mode(WIFI_AP);
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
@@ -61,6 +62,7 @@ void setup() {
 
   digitalWrite(SOLPIN, LOW);
   digitalWrite(SOLPIN2, LOW);
+  
 
   if (Settings.reverseSolenoid2 == true && Settings.HPAsystemType == DSOL) {
     digitalWrite(SOLPIN2, HIGH); // Нормально выдвинут - подаем HIGH для задвижения

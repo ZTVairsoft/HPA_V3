@@ -31,17 +31,31 @@ void PerformShot() {
 
 // Автоматический огонь
 void AutoShot() {
-  int count = 0;
-  while (count < Settings.numOfShotsAuto && triggerState == true) {
-    if (Settings.HPAsystemType == SSOL) {
-      PerformShot();
-    } else if (Settings.HPAsystemType == DSOL) {
-      DoubleSolenoidCycle();
+  if (Settings.numOfShotsAuto > 0) {
+    int count = 0;
+    while (count < Settings.numOfShotsAuto && triggerState == true) {
+      if (Settings.HPAsystemType == SSOL) {
+        PerformShot();
+      } else if (Settings.HPAsystemType == DSOL) {
+        DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
+      }
+      count++;
+      triggerState = !digitalRead(TRIGPIN) ^ Settings.convTrig;
+      if (triggerState == false) {
+        break;
+      }
     }
-    count++;
-    triggerState = !digitalRead(TRIGPIN) ^ Settings.convTrig;
-    if (triggerState == false) {
-      break;
+  } else {
+    while (triggerState == true) {
+      if (Settings.HPAsystemType == SSOL) {
+        PerformShot();
+      } else if (Settings.HPAsystemType == DSOL) {
+        DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
+      }
+      triggerState = !digitalRead(TRIGPIN) ^ Settings.convTrig;
+      if (triggerState == false) {
+        break;
+      }
     }
   }
   WaitForTriggerRelease();
@@ -52,13 +66,13 @@ void DoubleShot() {
   if (Settings.HPAsystemType == SSOL) {
     PerformShot();
   } else if (Settings.HPAsystemType == DSOL) {
-    DoubleSolenoidCycle();
+    DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
   }
   WaitForTriggerRelease();
   if (Settings.HPAsystemType == SSOL) {
     PerformShot();
   } else if (Settings.HPAsystemType == DSOL) {
-    DoubleSolenoidCycle();
+    DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
   }
 }
 
@@ -67,7 +81,7 @@ void SingleShot() {
   if (Settings.HPAsystemType == SSOL) {
     PerformShot();
   } else if (Settings.HPAsystemType == DSOL) {
-    DoubleSolenoidCycle();
+    DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
   }
   if (Settings.Mode == SNIPERMODE) {
     delay(Settings.shotDelay);
@@ -83,7 +97,7 @@ void ShortShot() {
     if (Settings.HPAsystemType == SSOL) {
       PerformShot();
     } else if (Settings.HPAsystemType == DSOL) {
-      DoubleSolenoidCycle();
+      DoubleSolenoidCycle(Settings.openBolt, Settings.reverseSolenoid2, Settings.otkat);
     }
     count++;
     triggerState = !digitalRead(TRIGPIN) ^ Settings.convTrig;
@@ -115,58 +129,145 @@ void SwModeSingleDoubleSolenoid() {
 
 void setSolenoid1(bool state) {
   digitalWrite(SOLPIN, state ? HIGH : LOW);
-  solenoid1Active = state;
 }
 
 void setSolenoid2(bool state) {
-  if (Settings.reverseSolenoid2) {
-    // Инвертируем управление для обратного режима
     digitalWrite(SOLPIN2, state ? LOW : HIGH);
-    solenoid2Active = state;
-  } else {
-    digitalWrite(SOLPIN2, state ? HIGH : LOW);
-    solenoid2Active = state;
-  }
 }
 
-void DoubleSolenoidCycle() {
-  // 1. Дергаем нозлом
-  setSolenoid2(true);
-  delay(Settings.del2SolBegin);
-
-  // 2. подаем воздух
-  setSolenoid1(true);
-  delay(Settings.shotTime);
-
+void ActionFire() {
+  // Действия при выстреле
   lastShot = millis();
   isLS = 1;
-  if (Settings.Load2Select >= 2 && Settings.isLoad2 == 1) {
-    isLD2 = 1;
-    load2Lastshot = millis();
-    digitalWrite(SOLPIN2, HIGH);
-  }
+
   if (Settings.Load3Select >= 2 && Settings.isTracer == 1) {
     isLSTr = 1;
     tracLastShot = millis();
     digitalWrite(TRACER, HIGH);
   }
   WR.shotCount++;  // +1 к счетчику выстрелов
+}
 
-  // 3. выключаем воздух
+void NO_NIN_0() {  //для конфигурации 1-0-НУ или 0-1-НУ
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(false);
+      break;
+    case true:
+      setSolenoid2(true);
+      break;
+  }
+  delay(Settings.del2SolBegin);
+
+  setSolenoid1(true);
+  delay(Settings.shotTime);
+
   setSolenoid1(false);
   delay(Settings.del2SolEnd);
 
-  // 4. Задвигаем нозл
-  setSolenoid2(false);
+  ActionFire();
 
-  // 5. Задержка между выстрелами
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(true);
+      break;
+    case true:
+      setSolenoid2(false);
+      break;
+  }
+  delay(Settings.shotWait);
+}
+
+void NO_IN_OK() {  //для конфигурации 1-1-0 или 0-0-0
+  setSolenoid1(true);
+  delay(Settings.shotTime);
+
+  setSolenoid1(false);
+  delay(Settings.del2SolEnd);
+
+  ActionFire();
+
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(false);
+      break;
+    case true:
+      setSolenoid2(true);
+      break;
+  }
   delay(Settings.shotWait);
 
-  // 6. Установка конечного состояния второго соленоида
-  if (Settings.openBolt) {
-    setSolenoid2(false);
-  } else {
-    setSolenoid2(true);
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(true);
+      break;
+    case true:
+      setSolenoid2(false);
+      break;
+  }
+  delay(Settings.del2SolBegin);
+}
+
+void NO_IN_ON() {  //для конфигурации 1-1-1 или 0-0-1
+    switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(false);
+      break;
+    case true:
+      setSolenoid2(true);
+      break;
+  }
+  delay(Settings.shotWait);
+
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(true);
+      break;
+    case true:
+      setSolenoid2(false);
+      break;
+  }
+  delay(Settings.del2SolBegin);
+
+  setSolenoid1(true);
+  delay(Settings.shotTime);
+
+  setSolenoid1(false);
+  delay(Settings.del2SolEnd);
+
+  ActionFire();
+
+  switch (Settings.reverseSolenoid2) {
+    case false:
+      setSolenoid2(true);
+      break;
+    case true:
+      setSolenoid2(false);
+      break;
+  }
+  //delay(Settings.shotWait);
+}
+
+void DoubleSolenoidCycle(uint8_t p1, uint8_t p2, uint8_t p3) {
+  uint8_t state = (p1 << 2) | (p2 << 1) | p3;
+  switch (state) {
+    case 0b010:  // 0-1-0
+    case 0b100:  // 1-0-0
+      NO_NIN_0();
+      Serial.println("F1");
+      break;
+
+    case 0b110:  // 1-1-0
+    case 0b000:  // 0-0-0
+      NO_IN_OK();
+      Serial.println("F2");
+      break;
+
+    case 0b111:  // 1-1-1
+    case 0b001:  // 0-0-1
+      NO_IN_ON();
+      Serial.println("F3");
+      break;
   }
 }
 

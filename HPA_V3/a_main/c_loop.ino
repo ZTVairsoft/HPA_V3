@@ -61,7 +61,7 @@ void loop() {
 
   autoMode = autoModeState ? 2 : 1;
 
-  if (millis() - lastShot >= deepSleepTime || isBatSafeFlag == true) {
+  if (millis() - lastShot >= deepSleepTime && Settings.isDeepSleep || isBatSafeFlag == true) {
     // Переход в глубокий сон
     Serial.println("сон");  //засыпает и не просыпается зараза
     enterDeepSleep();
@@ -95,7 +95,6 @@ void loop() {
       case M4:
         switch (Settings.HPAsystemType) {
           case SSOL:
-            Serial.println("TEST");
             SwModeSingleDoubleSolenoid();
             break;
           case DSOL:

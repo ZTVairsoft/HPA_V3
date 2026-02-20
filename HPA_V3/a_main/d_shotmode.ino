@@ -3,16 +3,61 @@ void FireSolenoid() {
   delay(Settings.shotTime);    // Задержка в открытом состоянии
   lastShot = millis();
   isLS = 1;
-  if (Settings.Load2Select >= 2 && Settings.isLoad2 == 1) {
-    isLD2 = 1;
-    load2Lastshot = millis();
-    digitalWrite(SOLPIN2, HIGH);
+  if (Settings.isLoad2 == 1) {
+    switch (Settings.Load2Select) {
+      case DELAFTERSHOTSEC:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        digitalWrite(SOLPIN2, HIGH);
+        break;
+      case DELAFTERSHOTMIN:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        digitalWrite(SOLPIN2, HIGH);
+        break;
+      case TRASHOP:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        analogWrite(SOLPIN2, map(Settings.load2PWMRab, 0, 100, 0, 255));
+        break;
+      case BUBEN:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        analogWrite(SOLPIN2, map(Settings.load2PWMRab, 0, 100, 0, 255));
+        break;
+      default:
+        break;
+        //
+    }
   }
-  if (Settings.Load3Select >= 2 && Settings.isTracer == 1) {
-    isLSTr = 1;
-    tracLastShot = millis();
-    digitalWrite(TRACER, HIGH);
+
+  if (Settings.isTracer == 1) {
+    switch (Settings.Load3Select) {
+      case DELAFTERSHOTSEC:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case DELAFTERSHOTMIN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case TRASHOP:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      case BUBEN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      default:
+        break;
+    }
   }
+
   WR.shotCount++;             // +1 к счетчику выстрелов
   digitalWrite(SOLPIN, LOW);  // Отключаем соленоид
 }
@@ -132,23 +177,47 @@ void setSolenoid1(bool state) {
 }
 
 void setSolenoid2(bool state) {
-    digitalWrite(SOLPIN2, state ? LOW : HIGH);
+  digitalWrite(SOLPIN2, state ? LOW : HIGH);
 }
 
 void ActionFire() {
   // Действия при выстреле
   lastShot = millis();
   isLS = 1;
-
-  if (Settings.Load3Select >= 2 && Settings.isTracer == 1) {
-    isLSTr = 1;
-    tracLastShot = millis();
-    digitalWrite(TRACER, HIGH);
-  }
   WR.shotCount++;  // +1 к счетчику выстрелов
 }
 
+void ActionTrac() {
+  if (Settings.isTracer == 1) {
+    switch (Settings.Load3Select) {
+      case DELAFTERSHOTSEC:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case DELAFTERSHOTMIN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case TRASHOP:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      case BUBEN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      default:
+        break;
+    }
+  }
+}
+
 void NO_NIN_0() {  //для конфигурации 1-0-НУ или 0-1-НУ
+  ActionTrac();
   switch (Settings.reverseSolenoid2) {
     case false:
       setSolenoid2(false);
@@ -179,6 +248,7 @@ void NO_NIN_0() {  //для конфигурации 1-0-НУ или 0-1-НУ
 }
 
 void NO_IN_OK() {  //для конфигурации 1-1-0 или 0-0-0
+  ActionTrac();
   setSolenoid1(true);
   delay(Settings.shotTime);
 
@@ -209,7 +279,8 @@ void NO_IN_OK() {  //для конфигурации 1-1-0 или 0-0-0
 }
 
 void NO_IN_ON() {  //для конфигурации 1-1-1 или 0-0-1
-    switch (Settings.reverseSolenoid2) {
+  ActionTrac();
+  switch (Settings.reverseSolenoid2) {
     case false:
       setSolenoid2(false);
       break;
@@ -254,19 +325,19 @@ void DoubleSolenoidCycle(uint8_t p1, uint8_t p2, uint8_t p3) {
     case 0b010:  // 0-1-0
     case 0b100:  // 1-0-0
       NO_NIN_0();
-      Serial.println("F1");
+      //Serial.println("F1");
       break;
 
     case 0b110:  // 1-1-0
     case 0b000:  // 0-0-0
       NO_IN_OK();
-      Serial.println("F2");
+      //Serial.println("F2");
       break;
 
     case 0b111:  // 1-1-1
     case 0b001:  // 0-0-1
       NO_IN_ON();
-      Serial.println("F3");
+      //Serial.println("F3");
       break;
   }
 }
@@ -278,6 +349,88 @@ void CheckButtons() {
     safetyState = !digitalRead(PROGSAFE) ^ Settings.isConvSafe;
   } else {
     safetyState = false;
+  }
+  if(safetyState != isLastPosPred){ 
+    isLastPosPred = safetyState;
+    if (isLastPosPred == true){
+      NightModeRelease();
+    }else{
+      NightModeConnect();
+    }
+  }
+}
+
+void NightModeRelease(){
+  if(Settings.isSoundModule){
+    mp3.playFileByIndexNumber(Settings.SMReleaseMagSound);
+  }
+  if(Settings.Load2Select >= 4){
+    digitalWrite(SOLPIN2, LOW);
+    isLD2 = 0;
+  }
+  if(Settings.Load3Select == 4){
+    digitalWrite(TRACER, LOW);
+    isLSTr = 0;
+  }
+}
+
+void NightModeConnect(){
+  if(Settings.isSoundModule){
+    mp3.playFileByIndexNumber(Settings.SMConnectMagSound);
+  }
+  if(Settings.isLoad2 == 1){
+    switch (Settings.Load2Select) {
+      case DELAFTERSHOTSEC:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        digitalWrite(SOLPIN2, HIGH);
+        break;
+      case DELAFTERSHOTMIN:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        digitalWrite(SOLPIN2, HIGH);
+        break;
+      case TRASHOP:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        analogWrite(SOLPIN2, map(Settings.load2PWMRab, 0, 100, 0, 255));
+        break;
+      case BUBEN:
+        isLD2 = 1;
+        load2Lastshot = millis();
+        analogWrite(SOLPIN2, map(Settings.load2PWMRab, 0, 100, 0, 255));
+        break;
+      default:
+        break;
+        //
+    }
+  }
+
+  if (Settings.isTracer == 1) {
+    switch (Settings.Load3Select) {
+      case DELAFTERSHOTSEC:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case DELAFTERSHOTMIN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        digitalWrite(TRACER, HIGH);
+        break;
+      case TRASHOP:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      case BUBEN:
+        isLSTr = 1;
+        tracLastShot = millis();
+        analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+        break;
+      default:
+        break;
+    }
   }
 }
 
@@ -320,7 +473,7 @@ void runSolenoidSinus() {
             break;
         }
         if (previousState[i] && !currentState[i]) {
-          WR.shotCount++;
+          ActionFire();
         }
       }
     }

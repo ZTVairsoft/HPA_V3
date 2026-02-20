@@ -10,62 +10,86 @@ void loop() {
     mem2.update();
     isLS = 0;
   }
-  switch (Settings.Load2Select) {
-    case NOPE:
-      break;
-    case JUSTON:
-      break;
-    case DELAFTERSHOTSEC:
-      break;
-    case DELAFTERSHOTMIN:
-      break;
+
+  if (Settings.isLoad2 == 1 && isLD2 == 1) {
+    switch (Settings.Load2Select) {
+      case DELAFTERSHOTSEC:
+        if (load2Lastshot + (Settings.Load2Time * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(SOLPIN2, LOW);
+          isLD2 = 0;
+        }
+        break;
+      case DELAFTERSHOTMIN:
+        if (load2Lastshot + (Settings.Load2Time * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(SOLPIN2, LOW);
+          isLD2 = 0;
+        }
+        break;
+      case TRASHOP:
+        if (load2Lastshot + (Settings.Load2Time * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          analogWrite(SOLPIN2, map(Settings.load2PWMDej, 0, 100, 0, 255));
+          isLD2 = 0;
+        }
+        break;
+      case BUBEN:
+        if (load2Lastshot + (Settings.Load2Time * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(SOLPIN2, LOW);
+          isLD2 = 0;
+        }
+        break;
+    }
   }
 
-  switch (Settings.Load2Select) {
-    case DELAFTERSHOTSEC:
-      if (Settings.isLoad2 == 1 && isLD2 == 1 && load2Lastshot + (Settings.Load2Time * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
-        digitalWrite(SOLPIN2, LOW);
-        isLD2 = 0;
-      }
-      break;
-    case DELAFTERSHOTMIN:
-      if (Settings.isLoad2 == 1 && isLD2 == 1 && load2Lastshot + (Settings.Load2Time * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
-        digitalWrite(SOLPIN2, LOW);
-        isLD2 = 0;
-      }
-      break;
-  }
-
-  switch (Settings.Load3Select) {
-    case DELAFTERSHOTSEC:
-      if (Settings.isTracer == 1 && isLSTr == 1 && tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
-        digitalWrite(TRACER, LOW);
-        isLSTr = 0;
-      }
-      break;
-    case DELAFTERSHOTMIN:
-      if (Settings.isTracer == 1 && isLSTr == 1 && tracLastShot + (Settings.tracTime * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
-        digitalWrite(TRACER, LOW);
-        isLSTr = 0;
-      }
-      break;
+  if (Settings.isTracer == 1 && isLSTr == 1) {
+    switch (Settings.Load3Select) {
+      case DELAFTERSHOTSEC:
+        if (tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(TRACER, LOW);
+          isLSTr = 0;
+        }
+        break;
+      case DELAFTERSHOTMIN:
+        if (tracLastShot + (Settings.tracTime * 1000 * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(TRACER, LOW);
+          isLSTr = 0;
+        }
+        break;
+      case TRASHOP:
+        if (tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          analogWrite(TRACER, map(Settings.load3PWMDej, 0, 100, 0, 255));
+          isLSTr = 0;
+        }
+        break;
+      case BUBEN:
+        if (tracLastShot + (Settings.tracTime * 1000) <= millis()) {  //ВЫключение трассерки после заданного времени после выстрела
+          digitalWrite(TRACER, LOW);
+          isLSTr = 0;
+        }
+        break;
+    }
   }
 
   if (millis() - voltTime > 2000) {  //проверка напряжения
     Volt();
   }
 
-  CheckButtons();
-
-  deepSleepTime = Settings.deepSleepMin * 1000 * 60;  //время до ухода в сон
-
-  autoMode = autoModeState ? 2 : 1;
-
   if (millis() - lastShot >= deepSleepTime && Settings.isDeepSleep || isBatSafeFlag == true) {
     // Переход в глубокий сон
     Serial.println("сон");  //засыпает и не просыпается зараза
     enterDeepSleep();
   }
+
+  if (millis() - lastShot >= LIGHTSLEEPTIME && isSetupMode == false && Settings.isLightSleep == true) {
+    lastShot = millis();
+    light_sleep();
+    delay(1);
+    WiFi.mode(WIFI_OFF);
+    WiFi.forceSleepBegin();
+  }
+
+  CheckButtons();
+
+  autoMode = autoModeState ? 2 : 1;
 
   if (safetyState == true || isWiFiFlag == false) {
     // Если предохранитель нажат, соленоид отключен
@@ -88,7 +112,7 @@ void loop() {
           case DOUBLEBURREL:
             break;
           case NONSINGLESYSTEM:
-          runSolenoidSinus();
+            runSolenoidSinus();
             break;
         }
         break;
@@ -103,7 +127,7 @@ void loop() {
           case DOUBLEBURREL:
             break;
           case NONSINGLESYSTEM:
-          runSolenoidSinus();
+            runSolenoidSinus();
             break;
         }
         break;
@@ -118,7 +142,7 @@ void loop() {
           case DOUBLEBURREL:
             break;
           case NONSINGLESYSTEM:
-          runSolenoidSinus();
+            runSolenoidSinus();
             break;
         }
         break;
@@ -133,7 +157,7 @@ void loop() {
           case DOUBLEBURREL:
             break;
           case NONSINGLESYSTEM:
-          runSolenoidSinus();
+            runSolenoidSinus();
             break;
         }
         break;
@@ -148,7 +172,7 @@ void loop() {
           case DOUBLEBURREL:
             break;
           case NONSINGLESYSTEM:
-          runSolenoidSinus();
+            runSolenoidSinus();
             break;
         }
         break;
@@ -159,10 +183,11 @@ void loop() {
   }
   if (Serial.available()) {
     char c = Serial.read();
-    
+
     // Команда 'r' - ручной сброс системы
     if (c == 'r' || c == 'R') {
       mem1.reset();  // Сброс настроек
+      mem3.reset();
       Serial.println("Сброс");
       ESP.restart();
     }

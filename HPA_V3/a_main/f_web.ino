@@ -7,15 +7,16 @@ void build() {
   GP.UI_LINK("/", "Домашняя страница");
   GP.UI_LINK("/hpasettings", "Настройки конфигурации");
   GP.UI_LINK("/settings", "Дополнительные настройки");
+  GP.UI_LINK("/sound", "В разработке");
   GP.UI_LINK("/info", "Информация");
   GP.UI_LINK("/ota_update", "Обновление");
 
   GP.UI_BODY();
 
   GP.UPDATE("rof,cof,vol,pr,vo,vc,vd,vi,volcor,btn,cow,sf,sa,na,OV,R1,R2,TrSl,DSSl,DSTr,led1,led2,led3,pcb,hpa,OpBo,InNoz");
-  GP.RELOAD_CLICK("SOPS,Ld2Sw,TrSw,DSTr,OpBo,InNoz");
+  GP.RELOAD_CLICK("SOPS,Ld2Sw,TrSw,DSTr,OpBo,InNoz,load2,load3");
 
-  GP.TITLE("ZTV ВВД v.3.1");
+  GP.TITLE("ZTV ВВД v.3.1.1");
   GP.HR();
 
   if (ui.uri("/")) {
@@ -80,6 +81,10 @@ void build() {
           M_BOX(GP.SWITCH("CvSf", Settings.isConvSafe); GP.LED("led1"); GP.LABEL("инверт. предохранитель"););
         }
         M_BOX(GP.SWITCH("SOPS", Settings.isSWProgSafe); GP.LABEL("вкл. электр. предохр."););
+        if (Settings.isSWProgSafe) {
+          M_BOX(GP.SWITCH("NigMode", Settings.isNightMode); GP.LABEL("вкл. ночной режим"););
+          M_BOX(GP.SWITCH("SoMod", Settings.isSoundModule); GP.LABEL("вкл. звуковой модуль"););
+        }
       }
 
       if (Settings.Mode == CQBMODE) {
@@ -125,7 +130,7 @@ void build() {
           case DELAFTERSHOTMIN:
             GP.LABEL("Мин. до отключения");
             break;
-        } M_BOX(GP.LABEL(""); GP.SLIDER("LD2Sl", Settings.Load2Time, 1, 5, 1, 0, GP_BLUE, !Settings.isLoad2););
+        } M_BOX(GP.LABEL(""); GP.SLIDER("LD2Sl", Settings.Load2Time, 0, 5, 1, 0, GP_BLUE, !Settings.isLoad2););
         GP.BREAK(););
     }
 
@@ -143,7 +148,7 @@ void build() {
             break;
         }
 
-        M_BOX(GP.LABEL(""); GP.SLIDER("TrSl", Settings.tracTime, 1, 5, 1, 0, GP_BLUE, !Settings.isTracer););
+        M_BOX(GP.LABEL(""); GP.SLIDER("TrSl", Settings.tracTime, 0, 5, 1, 0, GP_BLUE, !Settings.isTracer););
         GP.BREAK(););
     }
 
@@ -153,7 +158,9 @@ void build() {
       GP.BREAK();
       GP.LABEL("Минут до отключения");
       M_BOX(GP.LABEL(""); GP.SLIDER("DSSl", Settings.deepSleepMin, 1, 300, 1, 0, GP_YELLOW, !Settings.isDeepSleep););
-      GP.BREAK(););
+      GP.BREAK();
+      GP.LABEL("Легкий сон");
+      GP.SWITCH("LgSlp", Settings.isLightSleep););
     // GP.LABEL("коррект. напр.");
     // GP.SPINNER("volcor", Settings.voltCorr);
     // GP.BREAK();
@@ -181,10 +188,10 @@ void build() {
     if (Settings.HPAsystemType == DSOL) {
       M_BOX(GP.SWITCH("OpBo", Settings.openBolt); GP.LABEL("Норм.откр.нозл"););
       M_BOX(GP.SWITCH("InNoz", Settings.reverseSolenoid2); GP.LABEL("инверт. нозл"););
-      if(Settings.openBolt == true && Settings.reverseSolenoid2 == false || Settings.openBolt == false && Settings.reverseSolenoid2 == true){
+      if (Settings.openBolt == true && Settings.reverseSolenoid2 == false || Settings.openBolt == false && Settings.reverseSolenoid2 == true) {
         Settings.otkat = false;
-      }else{
-      M_BOX(GP.SWITCH("Otk", Settings.otkat); GP.LABEL("откат в начале"););
+      } else {
+        M_BOX(GP.SWITCH("Otk", Settings.otkat); GP.LABEL("откат в начале"););
       }
     }
     switch (Settings.HPAsystemType) {
@@ -212,10 +219,16 @@ void build() {
     M_BOX(GP.SWITCH("BS", Settings.isBatSafe); GP.LABEL("отключение при разряде"););
     M_BLOCK_THIN_TAB(
       "Настройка делителя",
-      M_BOX(GP.LABEL("R1"); GP.NUMBER_F("R1", "", Settings.divR1););
-      M_BOX(GP.LABEL("R2"); GP.NUMBER_F("R2", "", Settings.divR2););
-      M_BOX(GP.LABEL("Опорное"); GP.NUMBER_F("OV", "", Settings.voltCorr););
+      M_BOX(GP.LABEL("R1"); GP.NUMBER_F("R1", "", Settings.divR1, 5););
+      M_BOX(GP.LABEL("R2"); GP.NUMBER_F("R2", "", Settings.divR2, 5););
+      M_BOX(GP.LABEL("Опорное"); GP.NUMBER_F("OV", "", Settings.voltCorr, 5););
+      GP.LABEL("факт.напряж. / расчетное");
+      GP.LABEL("= результата в опорное");
       GP.BUTTON("btn", "Сохранить настройки");
+
+
+      //M_BOX(GP.LABEL("Факт.напр."); GP.NUMBER_F("FV", "", factVoltage, 2););
+      //GP.BUTTON("FVbut", "Скорректировать");
 
       GP.LABEL("Напряжение: ");
       GP.LABEL("", "vol");
@@ -227,18 +240,25 @@ void build() {
       GP.BREAK(););
 
 
-    GP.TEXT("ssd", "text", WF.WF_SSID);
-    GP.BREAK();
+    //GP.TEXT("ssd", "text", WF.WF_SSID);
+    //GP.BREAK();
     GP.TEXT("pass", "pass", WF.WF_PASS);
     GP.BREAK();
     GP.BUTTON("WFbtn", "Сохранить Wi-Fi");
     GP.BREAK();
     GP.BUTTON_MINI("WFRbtn", "Сброс Wi-fi");
 
-
+  } else if (ui.uri("/sound")) {
+    GP.LABEL("");
+    /*M_BOX(GP.LABEL("Громкость"); GP.SLIDER("Volume", Settings.SMVolume, 0, 30););
+    M_BOX(GP.LABEL("Отмыкание"); GP.SELECT("Otmyk", "0,1,2,3,4", Settings.SMReleaseMagSound); GP.BUTTON_MINI("play1", ">"); GP.BREAK(););
+    M_BOX(GP.LABEL("Примыкание"); GP.SELECT("Primyk", "0,1,2,3,4", Settings.SMConnectMagSound); GP.BUTTON_MINI("play2", ">"); GP.BREAK(););
+    M_BOX(GP.LABEL("Одиночка"); GP.SELECT("Odin", "0,1,2,3,4", Settings.SMSingleShotSound); GP.BUTTON_MINI("play3", ">"); GP.BREAK(););
+    M_BOX(GP.LABEL("Очередь"); GP.SELECT("Ocher", "0,1,2,3,4", Settings.SMMachineGunSound); GP.BUTTON_MINI("play4", ">"); GP.BREAK(););
+    GP.BUTTON("btn", "Сохранить настройки");*/
 
   } else if (ui.uri("/info")) {
-    GP.LABEL("Прошивка v3.1");
+    GP.LABEL("Прошивка v3.1.1");
     GP.BREAK();
     GP.BREAK();
     GP.LABEL("Магазин");
@@ -271,17 +291,55 @@ void build() {
 void OneLoad() {
   GP.LABEL("Работа нагрузки");
   GP.BREAK();
-  M_BOX(GP.LABEL("3 нагрузка"); GP.SELECT("load3", "выключена,включена,выкл.сек.,выкл.мин.", Settings.Load3Select); GP.BREAK(););
+  M_BOX(GP.LABEL("3 нагрузка"); GP.SELECT("load3", "выключена,включена,выкл.сек.,выкл.мин.,трасс.хоп.,короб", Settings.Load3Select); GP.BREAK(););
+  if (Settings.Load3Select >= 4) {
+    if (Settings.Load3Select == 4) {
+      GP.LABEL("дежурная мощность");
+      GP.BREAK();
+      GP.SLIDER("Ld3dej", Settings.load3PWMDej, 0, 100);
+      GP.BREAK();
+    }
+    GP.LABEL("рабочая мощность");
+    GP.BREAK();
+    GP.SLIDER("Ld3rab", Settings.load3PWMRab, 0, 100);
+    GP.BREAK();
+    GP.BUTTON("Ld3Bt", "Тест 3 нагрузки");
+    GP.BREAK();
+  }
 }
 
 void TwoLoads() {
   GP.LABEL("Работа нагрузок");
   GP.BREAK();
-  M_BOX(GP.LABEL("2 нагрузка"); GP.SELECT("load2", "выключена,включена,выкл.сек.,выкл.мин.", Settings.Load2Select); GP.BREAK(););
-  M_BOX(GP.LABEL("3 нагрузка"); GP.SELECT("load3", "выключена,включена,выкл.сек.,выкл.мин.", Settings.Load3Select); GP.BREAK(););
-}
-
-void TypeLoads() {
+  M_BOX(GP.LABEL("2 нагрузка"); GP.SELECT("load2", "выключена,включена,выкл.сек.,выкл.мин.,трасс.хоп.,короб", Settings.Load2Select); GP.BREAK(););
+  if (Settings.Load2Select >= 4) {
+    if (Settings.Load2Select == 4) {
+      GP.LABEL("дежурная мощность");
+      GP.BREAK();
+      GP.SLIDER("Ld2dej", Settings.load2PWMDej, 0, 100);
+    }
+    GP.LABEL("рабочая мощность");
+    GP.BREAK();
+    GP.SLIDER("Ld2rab", Settings.load2PWMRab, 0, 100);
+    GP.BREAK();
+    GP.BUTTON("Ld2Bt", "Тест 2 нагрузки");
+    GP.BREAK();
+  }
+  M_BOX(GP.LABEL("3 нагрузка"); GP.SELECT("load3", "выключена,включена,выкл.сек.,выкл.мин.,трасс.хоп.,короб", Settings.Load3Select); GP.BREAK(););
+  if (Settings.Load3Select >= 4) {
+    if (Settings.Load3Select == 4) {
+      GP.LABEL("дежурная мощность");
+      GP.BREAK();
+      GP.SLIDER("Ld3dej", Settings.load3PWMDej, 0, 100);
+      GP.BREAK();
+    }
+    GP.LABEL("рабочая мощность");
+    GP.BREAK();
+    GP.SLIDER("Ld3rab", Settings.load3PWMRab, 0, 100);
+    GP.BREAK();
+    GP.BUTTON("Ld3Bt", "Тест 3 нагрузки");
+    GP.BREAK();
+  }
 }
 
 void action() {
@@ -406,7 +464,18 @@ void action() {
       if (!Settings.isLoad2) digitalWrite(SOLPIN2, LOW);
     }
 
+    if (ui.clickInt("Ld2dej", Settings.load2PWMDej)) {
+      analogWrite(SOLPIN2, map(Settings.load2PWMDej, 0, 100, 0, 255));
+    }
+
+    if (ui.clickInt("Ld3dej", Settings.load3PWMDej)) {
+      analogWrite(TRACER, map(Settings.load3PWMDej, 0, 100, 0, 255));
+    }
+
     if (ui.clickBool("DSTr", Settings.isDeepSleep)) {
+    }
+
+    if (ui.clickBool("LgSlp", Settings.isLightSleep)) {
     }
 
     if (ui.clickBool("CvTr", Settings.convTrig)) {
@@ -421,6 +490,17 @@ void action() {
     if (ui.clickBool("SOPS", Settings.isSWProgSafe)) {
     }
 
+    if (ui.clickBool("NigMode", Settings.isNightMode)) {
+    }
+
+    if (ui.clickBool("SoMod", Settings.isSoundModule)) {
+      if (Settings.isSoundModule) {
+        Serial.begin(9600);
+      } else {
+        Serial.begin(115200);
+      }
+    }
+
     if (ui.clickBool("WFTr", isWiFiFlag)) {
     }
 
@@ -433,19 +513,33 @@ void action() {
     if (ui.clickInt("TrSl", Settings.tracTime)) {
     }
 
+    if (ui.clickInt("Ld2dej", Settings.load2PWMDej)) {}
+    if (ui.clickInt("Ld2rab", Settings.load2PWMRab)) {}
+    if (ui.clickInt("Ld3dej", Settings.load3PWMDej)) {}
+    if (ui.clickInt("Ld3rab", Settings.load3PWMRab)) {}
+
     if (ui.clickInt("LD2Sl", Settings.Load2Time)) {
     }
 
     if (ui.clickInt("DSSl", Settings.deepSleepMin)) {
+      deepSleepTime = Settings.deepSleepMin * 1000 * 60;  //время до ухода в сон
     }
 
     if (ui.clickInt("volcor", Settings.voltCorr)) {
     }
 
+    if (ui.clickInt("FV", factVoltage)) {
+    }
+
+    /*if (ui.click("FVbut")) {
+      Settings.voltCorr = factVoltage / resVoltValue;
+      factVoltage = 0;
+    }*/
+
     if (ui.click("btn")) {
       WR.writeCount++;
-      mem1.updateNow();  // обновить сейчас
-      mem2.updateNow();
+      mem2.updateNow();  // обновить сейчас
+      mem3.updateNow();
       Serial.println("Изменения сохранены");
     }
     if (ui.click("WFbtn")) {
@@ -455,22 +549,36 @@ void action() {
       Serial.println(WF.apply);
       WF.apply = 1;
 
-      mem3.updateNow();  // обновить сейчас
+      mem1.updateNow();  // обновить сейчас
       Serial.println("Изменения сохранены");
 
       ESP.restart();
+    }
+
+    if (ui.click("Ld2Bt")) {
+      analogWrite(SOLPIN2, map(Settings.load2PWMRab, 0, 100, 0, 255));
+      isLD2 = 1;
+      load2Lastshot = millis();
+      Settings.isLoad2 = 1;
+    }
+
+    if (ui.click("Ld3Bt")) {
+      analogWrite(TRACER, map(Settings.load3PWMRab, 0, 100, 0, 255));
+      isLSTr = 1;
+      tracLastShot = millis();
+      Settings.isTracer = 1;
     }
 
     if (ui.click("WFRbtn")) {
       WR.writeCount++;
       mem2.updateNow();  // обновить сейчас
       Serial.println("Сброс Wi-Fi");
-      mem3.reset();  // Сброс настроек
+      mem1.reset();  // Сброс настроек
       ESP.restart();
     }
 
     if (ui.click("btnS")) {
-      mem1.reset();  // Сброс настроек
+      mem3.reset();  // Сброс настроек
       Serial.println("Сброс");
       ESP.restart();
     }
